@@ -18,12 +18,8 @@ var includeInThisContext = function(path) {
 
 navigator = {};
 navigator.userAgent = "Chrome";
-//hack to get "browser JS" to run in NodeJS
-//includeInThisContext("strophe/strophe.js");
-//context.Strophe = context.window.Strophe;
-//includeInThisContext("strophe/strophe.register.js");
-//includeInThisContext("strophe/strophe.muc.js");
 
+//hack to get "browser JS" to run in NodeJS
 includeInThisContext("crypto-js/core.js");
 includeInThisContext("crypto-js/enc-base64.js");
 includeInThisContext("crypto-js/cipher-core.js");
@@ -42,12 +38,9 @@ includeInThisContext("catfacts.js");
 includeInThisContext("bigint.js");
 includeInThisContext("otr.js");
 includeInThisContext("elliptic.js");
-//includeInThisContext("cryptocat.js");
 
 //Take out all the loaded things.
-Strophe = context.Strophe;
 Cryptocat = context.Cryptocat;
-Language = context.Language;
 DSA = context.DSA;
 multiParty = context.multiParty;
 OTR = context.OTR;
@@ -77,14 +70,9 @@ var currentStatus = 'online';
 var soundEmbed = null;
 var conn, conversationName, myNickname, myKey;
 
-
-var xmpp = require('node-xmpp');
-var muc = require('./node-xmpp-muc');
-var argv = process.argv;
-
-     
 // Seed RNG
 Cryptocat.setSeed(Cryptocat.generateSeed());
+
 // Create key
 multiParty.genPrivateKey();
 multiParty.genPublicKey();
@@ -93,8 +81,8 @@ console.log("Generating key...");
 myKey = new DSA();
 DSA.inherit(myKey);
 
-conversationName = "bot";
-myNickname = "bot";
+conversationName = "test";
+myNickname = "test";
 user = Cryptocat.randomString(256, 1, 1, 1, 0);
 password = Cryptocat.randomString(256, 1, 1, 1, 0);
 
@@ -270,129 +258,4 @@ cl.on('error',function(e) {
 	console.error(e);
 });
 	
-
-// Logs into the XMPP server, creating main connection/disconnection handlers.
-function login(username, password) {
-	conn = new Strophe.Connection(bosh);
-	conn.connect(username + '@' + domain, password, function(status) {
-		if (status === Strophe.Status.CONNECTING) {
-			console.log("Connecting...");
-		}
-		else if (status === Strophe.Status.CONNFAIL) {
-			console.log("Login error...");
-		}
-		else if (status === Strophe.Status.CONNECTED) {
-			conn.muc.join(
-				conversationName + '@' + conferenceServer, myNickname, 
-				function(message) {
-					if (	(message)) {
-						return true;
-					}
-				},
-				function (presence) {
-					if (handlePresence(presence)) {
-						return true;
-					}
-				}
-			);
-			if (localStorageOn) {
-				localStorage.setItem('myNickname', myNickname);
-			}
-
-			console.log("Connected!");
-
-/*			$('#buddy-main-Conversation').attr('status', 'online');
-			$('#loginInfo').text('✓');
-			$('#loginInfo').animate({'color': '#97CEEC'}, 'fast');
-			$('#bubble').animate({'margin-top': '+=0.5%'}, function() {
-				$('#bubble').animate({'margin-top': '0'}, function() {
-					$('#loginLinks').fadeOut();
-					$('#info').fadeOut();
-					$('#version').fadeOut();
-					$('#options').fadeOut();
-					$('#loginForm').fadeOut();
-					$('#bubble').animate({'width': '100%'})
-					.animate({'height': $(window).height()}, 'slow', function() {
-						$(this).animate({'margin': '0', 'border-radius': '0'}, 'slow');
-						$('.button').fadeIn();
-						$('#buddyWrapper').fadeIn('fast', function() {
-							$('#conversationInfo').animate({'width': $(window).width()}, function() {
-								$(window).resize();
-							});
-							var scrollWidth = document.getElementById('buddyList').scrollWidth;
-							$('#buddyList').css('width', (150 + scrollWidth) + 'px');
-							bindBuddyClick('main-Conversation');
-							$('#buddy-main-Conversation').click();
-							buddyNotifications = 1;
-						});
-					});
-				});
-			});*/
-			loginError = 0;
-		}
-		else if (status === Strophe.Status.DISCONNECTED) {
-			console.log("Disconnected.");
-			otrKeys = {};
-			multiParty.reset();
-			conversations = {};
-			loginCredentials = [];
-			currentConversation = 0;
-			conn = null;
-
-/*			$('.button').fadeOut('fast');
-			$('#conversationInfo').animate({'width': '0'});
-			$('#conversationInfo').text('');
-			$('#buddy-main-Conversation').attr('status', 'offline');
-			$('#userInput').fadeOut(function() {
-				$('#conversationWindow').slideUp(function() {
-					$('#buddyWrapper').fadeOut();
-					if (!loginError) {
-						$('#loginInfo').animate({'color': '#999'}, 'fast');
-						$('#loginInfo').text(Cryptocat.language['loginMessage']['thankYouUsing']);
-					}
-					$('#bubble').css({
-						'border-radius': '12px 0 12px 12px',
-						'margin': '0 auto'
-					});
-					$('#bubble').animate({
-						'margin-top': '5%',
-						'height': '310px'
-					}).animate({'width': '680px'}, 'slow', function() {
-						$('#buddyList div').each(function() {
-							if ($(this).attr('id') !== 'buddy-main-Conversation') {
-								$(this).remove();
-							}
-						});
-						$('#conversationWindow').text('');
-						otrKeys = {};
-						multiParty.reset();
-						conversations = {};
-						loginCredentials = [];
-						currentConversation = 0;
-						conn = null;
-						if (!loginError) {
-							$('#conversationName').val(Cryptocat.language['loginWindow']['conversationName']);
-						}
-						$('#nickname').val(Cryptocat.language['loginWindow']['nickname']);
-						$('#info').fadeIn();
-						$('#loginLinks').fadeIn();
-						$('#version').fadeIn();
-						$('#options').fadeIn();
-						$('#loginForm').fadeIn('fast', function() {
-							$('#conversationName').select();
-							$('#loginSubmit').removeAttr('readonly');
-						});
-					});
-					$('.buddy').unbind('click');
-					$('.buddyMenu').unbind('click');
-					$('#buddy-main-Conversation').insertAfter('#buddiesOnline');
-				});
-			});*/
-		}
-		else if (status === Strophe.Status.AUTHFAIL) {
-			console.log("Authentication failure!");
-			conn = null;
-		}
-	});
-}
 
